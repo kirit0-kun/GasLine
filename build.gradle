@@ -1,0 +1,63 @@
+plugins {
+    id 'java'
+    id 'org.openjfx.javafxplugin' version '0.0.10'
+    id 'org.beryx.jlink' version '2.24.0'
+}
+
+group 'com.flowapp'
+version '1.0-SNAPSHOT'
+mainClassName = "com.flowapp.GasLine.GasLine"
+
+startScripts {
+    classpath += files("$buildDir/resources/main")
+}
+
+application {
+    mainModule = 'com.flowapp.GasLine'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.jetbrains:annotations:20.1.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+javafx {
+    version = '15'
+    //modules = ['javafx.controls', 'javafx.graphics', 'javafx.fxml', 'javafx.base']
+}
+
+jlink {
+    launcher{
+        name = 'Gas Line'
+    }
+    jpackage {
+        appVersion = 1
+        installerOutputDir = file("$buildDir/installers")
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
+                'Main-Class': 'com.flowapp.GasLine.GasLine'
+        )
+    }
+}
+
+apply plugin: 'idea'
+
+idea {
+    module {
+        inheritOutputDirs = true
+    }
+}
