@@ -1,10 +1,20 @@
 package com.flowapp.GasLine;
 
+import com.flowapp.GasLine.Models.GasPipe;
 import com.flowapp.GasLine.Models.PanhandlePResult;
 import com.flowapp.GasLine.Models.Tuple2;
 import com.flowapp.GasLine.Utils.Constants;
 import com.flowapp.GasLine.Utils.FileUtils;
 import com.flowapp.GasLine.Utils.TableList;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -16,17 +26,20 @@ import java.util.stream.Collectors;
 
 public class GasLine {
 
-    private static StringBuilder steps;
+    private StringBuilder steps;
 
-    public static void main(String[] args) {
+    public void gasLine() {
 
         clear();
 
         final Float iDmm = 385.8f;
-        final float totalLengthKm = 120;
+        final float loopIDmm = iDmm;
+        final float totalLengthKm = 220;
         final float flowRateScfHr = 7.5f * 1_000_000f;
-        Float p2 = null;
-        Float p1 = 960f;
+        final float increasedFlowRateScfHr = flowRateScfHr * 1.35f;
+        final float consumerFlowRateScfHr = flowRateScfHr * 0.5f;
+        Float p2 = 200f;
+        Float p1 = null;
         final Float tMax = 80f;
         final Float tMin = 60f;
         Float tAvg = null;
@@ -41,6 +54,8 @@ public class GasLine {
 
         final float totalLengthMiles = totalLengthKm / Constants.KmInMile;
         final float flowRateScfDay = flowRateScfHr * Constants.HoursInDay;
+        final float increasedFlowRateScfDay = increasedFlowRateScfHr * Constants.HoursInDay;
+        final float consumerFlowRateScfDay = consumerFlowRateScfHr * Constants.HoursInDay;
 
         if (tAvg == null) {
             tAvg = (tMax + tMin) / 2 + Constants.RankinZeroF;
@@ -57,29 +72,221 @@ public class GasLine {
         println("δg = ΣYiMi / {} = {}/{} = {}", Constants.AirMolecularWeight, ymSum, Constants.AirMolecularWeight, spGr);
         PanhandlePResult panhandlePResult = null;
         if (p1 == null) {
-            panhandlePResult = calculateP1(p2, spGr, iDmm, flowRateScfDay, totalLengthMiles, tAvg, maxPressure);
+            panhandlePResult = calculateP1(p2, spGr, iDmm, flowRateScfDay, totalLengthMiles, tAvg, maxPressure, true);
             p1 = panhandlePResult.getP1();
             println("P1 = {} Psi", p1);
         } else if (p2 == null) {
-            panhandlePResult = calculateP2(p1, spGr, iDmm, flowRateScfDay, totalLengthMiles, tAvg);
+            if (p1 > maxPressure) {
+                println("P1 > Max Pressure, which is not feasible, therefore taking P1 = MaxPressure");
+                p1 = maxPressure;
+            }
+            panhandlePResult = calculateP2(p1, spGr, iDmm, flowRateScfDay, totalLengthMiles, tAvg, true);
             p2 = panhandlePResult.getP2();
             println("P2 = {} Psi", p2);
         }
+        final List<GasPipe> beforeLines = new ArrayList<>();
+        if (p1 > maxPressure) {
+            println("since P1 > Max Pressure");
+            println("then more than one station is required");
+            p1 = maxPressure;
+            beforeLines.addAll(calculateBoosterStations(iDmm, p2, tAvg, maxPressure, totalLengthMiles, flowRateScfDay, spGr, panhandlePResult.getZ()));
+        } else {
+            println("since P1 < Max Pressure");
+            println("then one station is sufficient");
+            final GasPipe line = new GasPipe(p1, p2, flowRateScfDay, iDmm, 0, totalLengthMiles);
+            beforeLines.add(line);
+        }
 
-        final float stationLength = calculateStationLengthMile(p1, p2, flowRateScfDay * 1.25f, iDmm, spGr, tAvg, panhandlePResult.getZ());
-        println("{}", stationLength);
-        final var loopy = calculateLoopFraction(roughness, iDmm, iDmm, flowRateScfDay, flowRateScfDay * 1.35f);
-        println("{}", loopy);
-        final float px = calculatePx(p1, p2, 0.5f);
-        println("{}", px);
-        final float x = calculateX(p1, p2, px);
-        println("{}", x);
-        final float storedV = calculateStoredVolume(p1, p2, iDmm, spGr, flowRateScfDay * 1.3333f/2, totalLengthMiles, tAvg);
-        println("{}", storedV);
+        println("If Q is increased to {} SCf/Day", increasedFlowRateScfDay);
+        println("Using loop with ID = {} mm", loopIDmm);
+        final List<GasPipe> loops = new ArrayList<>();
+        final List<GasPipe> linesToLoop = beforeLines.subList(Math.max(0, beforeLines.size()-3), beforeLines.size());
+        for (int i = 0; i < linesToLoop.size(); i++) {
+            final var lineToLoop = linesToLoop.get(i);
+            if (linesToLoop.size() > 1) {
+                println("For station #{}", beforeLines.size()-i);
+            }
+            final var loopy = calculateLoopFraction(roughness, iDmm, loopIDmm, flowRateScfDay, increasedFlowRateScfDay);
+            final var loopx = 1 - loopy;
+            final float loopLength = lineToLoop.getLengthMile() * loopy;
+            final float loopStart = lineToLoop.getStartMile() + lineToLoop.getLengthMile() * loopx;
+            final float loopP1 = calculateP2(lineToLoop.getP1(), spGr, lineToLoop.getIDmm(), increasedFlowRateScfDay, lineToLoop.getLengthMile() - loopLength, tAvg, false).getP2();
+            println("Then loop length (yl) = {} Miles", loopLength);
+            println("loop position = {} Miles from the first point", loopStart);
+            println("Loop head (P1) = {} Psi", loopP1);
+            final GasPipe loop = new GasPipe(loopP1, lineToLoop.getP2(), increasedFlowRateScfDay, loopIDmm, loopStart, loopLength);
+            loops.add(loop);
+        }
+
+        println("Using booster stations:-");
+        final List<GasPipe> afterLines = new ArrayList<>(calculateBoosterStations(iDmm, p2, tAvg, p1, totalLengthMiles, increasedFlowRateScfDay, spGr, panhandlePResult.getZ()));
+
+        println("Drawing");
+        println("Before Increase");
+        for (int i = 0; i < beforeLines.size(); i++) {
+            final var line = beforeLines.get(i);
+            println("Station {}", i+1);
+            renderLine(line);
+        }
+        println("Loops");
+        for (int i = 0; i < loops.size(); i++) {
+            final var line = loops.get(i);
+            println("Loop {}", i+1);
+            renderLine(line);
+        }
+        println("After increase");
+        for (int i = 0; i < afterLines.size(); i++) {
+            final var line = afterLines.get(i);
+            println("Station {}", i+1);
+            renderLine(line);
+        }
+
+        println("Packed Line:-");
+        final float storedV = calculateStoredVolume(p1, p2, iDmm, spGr, consumerFlowRateScfDay, totalLengthMiles, tAvg);
+        final float avgQ = (consumerFlowRateScfDay + flowRateScfDay) / 2;
+        println("Qavg = {} Scf/Day", avgQ);
+        final float strQ = Math.abs(flowRateScfDay - consumerFlowRateScfDay);
+        println("Qstr = {} Scf/Day", strQ);
+        final float avgTime = storedV / avgQ;
+        println("Tavg = {}/{} = {} days", storedV, avgQ, avgTime);
+        final float strTime = storedV / strQ;
+        println("Tstr = {}/{} = {} days", storedV, strQ, strTime);
+        println("Then t (worst condition) = {} days", Math.min(strTime, avgTime));
+
+        drawLines(beforeLines, loops, afterLines);
         System.out.println(steps);
     }
 
-    private static float calculateStoredVolume(float p1,
+    private void drawLines(List<GasPipe> beforeLines, List<GasPipe> loops, List<GasPipe> afterLines) {
+        XYChart.Series<Number, Number> beforeSeries = new XYChart.Series();
+        beforeSeries.setName("Before");
+        for (var l: beforeLines) {
+            for (var p: l.generateHG()) {
+                beforeSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
+            }
+        }
+
+        final List<XYChart.Series<Number, Number>> loopsSeries = new ArrayList<>();
+        for (var l: loops) {
+            XYChart.Series<Number, Number> loopSeries = new XYChart.Series();
+            loopSeries.setName("Loop");
+            for (var p: l.generateHG()) {
+                loopSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
+            }
+            loopsSeries.add(loopSeries);
+        }
+
+        XYChart.Series<Number, Number> afterSeries = new XYChart.Series();
+        afterSeries.setName("after");
+        for (var l: afterLines) {
+            for (var p: l.generateHG()) {
+                afterSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
+            }
+        }
+
+        //Defining the x an y axes
+        NumberAxis xAxis = new NumberAxis();
+        NumberAxis yAxis = new NumberAxis();
+
+        //Setting labels for the axes
+        xAxis.setLabel("L(mile)");
+        yAxis.setLabel("P(psi)");
+
+        LineChart<Number, Number> hydraulicGradient = new LineChart<Number, Number>(xAxis, yAxis);
+        hydraulicGradient.getData().addAll(beforeSeries, afterSeries);
+        hydraulicGradient.getData().addAll(loopsSeries);
+
+        for (var item: hydraulicGradient.getData()) {
+            for (XYChart.Data<Number, Number> entry : item.getData()) {
+                Tooltip t = new Tooltip("(" + String.format("%.2f", Math.abs((float) entry.getXValue())) + " , " + entry.getYValue().toString() + ")");
+                t.setShowDelay(new Duration(50));
+                Tooltip.install(entry.getNode(), t);
+            }
+        }
+
+        //Creating a stack pane to hold the chart
+        VBox box = new VBox(hydraulicGradient);
+        box.setPadding(new Insets(15, 15, 15, 15));
+        box.setStyle("-fx-background-color: BEIGE");
+        //Setting the Scene
+        Scene scene = new Scene(box, 595, 650);
+        Stage chartsWindow = new Stage();
+        chartsWindow = new Stage();
+        chartsWindow.setTitle("HG");
+        chartsWindow.setScene(scene);
+        chartsWindow.show();
+    }
+
+    private void renderLine(GasPipe line) {
+
+        final List<Object> xs = new ArrayList<>();
+        xs.add("X");
+        final List<Object> ls = new ArrayList<>();
+        ls.add("L, mile");
+        final List<Object> fromStartLs = new ArrayList<>();
+        fromStartLs.add("L from start, mile");
+        final List<Object> pxs = new ArrayList<>();
+        pxs.add("Px, psi");
+
+        for (float x = 0; x <= 1; x += 0.2f) {
+            xs.add(x);
+            final float l = line.getLengthMile() * x;
+            ls.add(l);
+            if (line.getStartMile() > 0) {
+                final float lFromStart = l + line.getStartMile();
+                fromStartLs.add(lFromStart);
+            }
+            pxs.add(line.calculatePx(x));
+        }
+
+        final List<Object[]> steps = new ArrayList<>();
+        steps.add(xs.toArray(new Object[0]));
+        steps.add(ls.toArray(new Object[0]));
+        if (fromStartLs.size() > 1) {
+            steps.add(fromStartLs.toArray(new Object[0]));
+        }
+        steps.add(pxs.toArray(new Object[0]));
+        println("P1 = {} Psi, P2 = {} Psi, L = {} Mile", line.getP1(), line.getP2(), line.getLengthMile());
+        renderTable(steps);
+    }
+
+    private List<GasPipe> calculateBoosterStations(Float iDmm, Float p2, Float tAvg, float p1, float totalLengthMiles, float flowRateScfDay, float spGr, float z) {
+        final List<GasPipe> beforeLines = new ArrayList<>();
+        final float stationLength = calculateStationLengthMile(p1, p2, flowRateScfDay, iDmm, spGr, tAvg, z);
+        final int numberOfStations = (int) Math.ceil(totalLengthMiles /stationLength);
+        println("calculate length for (P1 = {} Psi) = {} Miles, therefore requires {} stations", p1, stationLength, numberOfStations);
+        float remainingLength = totalLengthMiles;
+        for (int i = 1; i <= numberOfStations; i++) {
+            final float start = stationLength * (i-1);
+            final float length = Math.min(stationLength, remainingLength);
+            float stationP1;
+            if (length == stationLength) {
+                stationP1 = p1;
+            } else {
+                println("Calculating P1 for length = {} Miles", length);
+                stationP1 = calculateP1(p2, spGr, iDmm, flowRateScfDay, length, tAvg, p1, true).getP1();
+                println("Then P1 = {} Psi for length {} Miles", stationP1, length);
+            }
+            final GasPipe line = new GasPipe(stationP1, p2, flowRateScfDay, iDmm, start, length);
+            beforeLines.add(line);
+            remainingLength -= length;
+        }
+        println("Required stations:-");
+        renderBeforeLines(beforeLines);
+        return beforeLines;
+    }
+
+    private void renderBeforeLines(List<GasPipe> beforeLines) {
+        final List<Object[]> steps = new ArrayList<>();
+        steps.add(new Object[]{ "Station", "P1, Psi", "P2, Psi", "Length, Miles"});
+        for (int i = 0; i < beforeLines.size(); i++) {
+            final var station = beforeLines.get(i);
+            steps.add(new Object[]{ i+1, station.getP1(), station.getP2(), station.getLengthMile()});
+        }
+        renderTable(steps);
+    }
+
+    private float calculateStoredVolume(float p1,
                                                float p2,
                                                float iDmm,
                                                float spGr,
@@ -97,7 +304,7 @@ public class GasLine {
         println("Vn = {} SCF", vn);
 
         println("At packed conditions:-");
-        final var packedP2 = calculateP2(p1, spGr, iDmm, qAvgScfD, lengthMile, tAvg).getP2();
+        final var packedP2 = calculateP2(p1, spGr, iDmm, qAvgScfD, lengthMile, tAvg, true).getP2();
         println("P2 packed = {} Psi", packedP2);
         final float packedAvgP = calculateAvgPressure(p1, packedP2);
         println("Pavg packed = {} Psi", packedAvgP);
@@ -109,23 +316,7 @@ public class GasLine {
         return vStore;
     }
 
-    private static float calculatePx(float p1,
-                                    float p2,
-                                    float x) {
-
-        final float px = (float) Math.pow(Math.pow(p1,2) - ((Math.pow(p1,2) - Math.pow(p2, 2)) * x), 0.5); // Px
-        return px;
-    }
-
-    private static float calculateX(float p1,
-                                    float p2,
-                                    float px) {
-
-        final float x = (float) ((Math.pow(p1,2) - Math.pow(px, 2))/(Math.pow(p1,2) - Math.pow(p2, 2)));
-        return x;
-    }
-
-    private static float calculateLoopFraction(float roughness,
+    private float calculateLoopFraction(float roughness,
                                                float lineDmm,
                                                float loopDmm,
                                                float qBeforeScfDay,
@@ -153,7 +344,7 @@ public class GasLine {
         return y;
     }
 
-    private static float calculateStationLengthMile(float p1,
+    private float calculateStationLengthMile(float p1,
                                                     float p2,
                                                     float qScfDay,
                                                     float iDmm,
@@ -163,18 +354,19 @@ public class GasLine {
         return (float) ((Math.pow(p1, 2) - Math.pow(p2, 2)) / (tAvg*z*Math.pow(spGr,0.961f)) * (Math.pow((737 * (Math.pow(iDmm/Constants.MmInInch, 2.53f)) * Math.pow(520, 1.02f)) / (qScfDay*Math.pow(14.7f, 1.02f)), 1/0.51f)));
     }
 
-    private static PanhandlePResult calculateP1(float p2,
+    private PanhandlePResult calculateP1(float p2,
                                                 float spGr,
                                                 float idMM,
                                                 float qScfD,
                                                 float lengthMile,
-                                                float tAvg, float maxPressure ) {
+                                                float tAvg, float maxPressure, boolean print) {
 
         final float pc = 709.604f - 58.718f * spGr; // Pc
         final float tc = 170.492f + 307.344f * spGr; // Tc
         final float tr = tAvg / tc; // TR
-
-        println("Pc = {} Psi, Tc = {} F, TR = {}", pc, tc, tr);
+        if (print) {
+            println("Pc = {} Psi, Tc = {} F, TR = {}", pc, tc, tr);
+        }
         final List<Object[]> attempts = new ArrayList<>();
         attempts.add(new Object[]{ "Pass, Psi", "Pavg, Psi", "Pr", "z", "P1(calc), Psi"});
         float p1As = maxPressure; // p1As
@@ -196,22 +388,25 @@ public class GasLine {
                 break;
             }
         }
-        renderTable(attempts);
+        if (print) {
+            renderTable(attempts);
+        }
         return new PanhandlePResult(p1As, p2, pAvg, pr, z, pc, tc, tr);
     }
     
-    private static PanhandlePResult calculateP2(float p1,
+    private PanhandlePResult calculateP2(float p1,
                                                 float spGr,
                                                 float idMM,
                                                 float qScfD,
                                                 float lengthMile,
-                                                float tAvg ) {
+                                                float tAvg, boolean print ) {
 
         final float pc = 709.604f - 58.718f * spGr; // Pc
         final float tc = 170.492f + 307.344f * spGr; // Tc
         final float tr = tAvg / tc; // TR
-
-        println("Pc = {} Psi, Tc = {} F, TR = {}", pc, tc, tr);
+        if (print) {
+            println("Pc = {} Psi, Tc = {} F, TR = {}", pc, tc, tr);
+        }
         final List<Object[]> attempts = new ArrayList<>();
         attempts.add(new Object[]{ "Pass, Psi", "Pavg, Psi", "Pr", "z", "P2(calc), Psi"});
         float p2As = p1/3;
@@ -231,16 +426,17 @@ public class GasLine {
                 break;
             }
         }
-
-        renderTable(attempts);
+        if (print) {
+            renderTable(attempts);
+        }
         return new PanhandlePResult(p1, p2As, pAvg, pr, z, pc, tc, tr);
     }
 
-    private static float calculateAvgPressure(float p1, float p2) {
+    private float calculateAvgPressure(float p1, float p2) {
         return (float) (2 * ((Math.pow(p1, 3) - Math.pow(p2, 3)) / (Math.pow(p1, 2) - Math.pow(p2, 2))) / 3);
     }
 
-    private static float calculateCompsTable(
+    private float calculateCompsTable(
             Float c1y,
             Float c2y,
             Float c3y,
@@ -268,11 +464,11 @@ public class GasLine {
         return sum;
     }
 
-    private static void renderTable(List<Object[]> args) {
+    private void renderTable(List<Object[]> args) {
         renderTable(args.toArray(new Object[0][0]));
     }
 
-    private static void renderTable(Object[] ... args) {
+    private void renderTable(Object[] ... args) {
         final var temp = args[0];
         final String[] firstRow = new String[temp.length];
         for (int i = 0; i < temp.length; i++) {
@@ -298,18 +494,18 @@ public class GasLine {
         println(rend);
     }
 
-    private static void println(@NotNull String pattern, Object... args) {
+    private void println(@NotNull String pattern, Object... args) {
         final String message = format(pattern, args);
         steps.append(message).append('\n');
         FileUtils.printOut(message);
     }
 
-    private static void clear() {
+    private void clear() {
         steps = new StringBuilder();
         FileUtils.clear();
     }
 
-    private static String formatNumber(Number number) {
+    private String formatNumber(Number number) {
         final var value = number.floatValue();
         if (value < 0) {
             return String.format("%.7f", value);
@@ -321,7 +517,7 @@ public class GasLine {
     }
 
     @NotNull
-    private static String format(@NotNull String pattern, Object... args) {
+    private String format(@NotNull String pattern, Object... args) {
         Pattern rePattern = Pattern.compile("\\{([0-9+-]*)}", Pattern.CASE_INSENSITIVE);
         Matcher matcher = rePattern.matcher(pattern);
         int counter = -1;
@@ -356,7 +552,7 @@ public class GasLine {
         return pattern;
     }
 
-    private static <T extends Comparable<T>> T clamp(T val, T min, T max) {
+    private <T extends Comparable<T>> T clamp(T val, T min, T max) {
         if (val.compareTo(min) < 0) return min;
         else if (val.compareTo(max) > 0) return max;
         else return val;
