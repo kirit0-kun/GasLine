@@ -12,6 +12,7 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -34,7 +35,7 @@ public class GasLine {
 
         final Float iDmm = 385.8f;
         final float loopIDmm = iDmm;
-        final float totalLengthKm = 220;
+        final float totalLengthKm = 120;
         final float flowRateScfHr = 7.5f * 1_000_000f;
         final float increasedFlowRateScfHr = flowRateScfHr * 1.35f;
         final float consumerFlowRateScfHr = flowRateScfHr * 0.5f;
@@ -100,13 +101,21 @@ public class GasLine {
         println("If Q is increased to {} SCf/Day", increasedFlowRateScfDay);
         println("Using loop with ID = {} mm", loopIDmm);
         final List<GasPipe> loops = new ArrayList<>();
-        final List<GasPipe> linesToLoop = beforeLines.subList(Math.max(0, beforeLines.size()-3), beforeLines.size());
-        for (int i = 0; i < linesToLoop.size(); i++) {
+        final List<GasPipe> linesToLoop = new ArrayList<>();
+        if (beforeLines.size() > 1) {
+            linesToLoop.add(beforeLines.get(0));
+        }
+        linesToLoop.add(beforeLines.get(beforeLines.size() - 1));
+        for (int i = linesToLoop.size() - 1; i >= 0; i--) {
             final var lineToLoop = linesToLoop.get(i);
             if (linesToLoop.size() > 1) {
                 println("For station #{}", beforeLines.size()-i);
             }
             final var loopy = calculateLoopFraction(roughness, iDmm, loopIDmm, flowRateScfDay, increasedFlowRateScfDay);
+            if (loopy > 1) {
+                println("Since y > 1, then an increased flow rate using a loop is not feasible");
+                break;
+            }
             final var loopx = 1 - loopy;
             final float loopLength = lineToLoop.getLengthMile() * loopy;
             final float loopStart = lineToLoop.getStartMile() + lineToLoop.getLengthMile() * loopx;
@@ -205,11 +214,11 @@ public class GasLine {
         }
 
         //Creating a stack pane to hold the chart
-        VBox box = new VBox(hydraulicGradient);
-        box.setPadding(new Insets(15, 15, 15, 15));
-        box.setStyle("-fx-background-color: BEIGE");
+        StackPane pane = new StackPane(hydraulicGradient);
+        pane.setPadding(new Insets(15, 15, 15, 15));
+        pane.setStyle("-fx-background-color: BEIGE");
         //Setting the Scene
-        Scene scene = new Scene(box, 595, 650);
+        Scene scene = new Scene(pane, 595, 350);
         Stage chartsWindow = new Stage();
         chartsWindow = new Stage();
         chartsWindow.setTitle("HG");
