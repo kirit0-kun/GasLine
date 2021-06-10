@@ -6,7 +6,7 @@ plugins {
 
 group 'com.flowapp'
 version '1.0-SNAPSHOT'
-mainClassName = "com.flowapp.GasLine.GasLine"
+mainClassName = "com.flowapp.GasLine.Launcher"
 
 startScripts {
     classpath += files("$buildDir/resources/main")
@@ -24,6 +24,8 @@ dependencies {
     implementation 'org.jetbrains:annotations:20.1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    implementation files('../DateTimeRCryptor/build/libs/DateTimeRCryptor-1.0-SNAPSHOT.jar')
+    implementation 'com.google.code.gson:gson:2.8.7'
 }
 
 test {
@@ -49,7 +51,7 @@ jar {
     manifest {
         attributes(
                 'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
-                'Main-Class': 'com.flowapp.GasLine.GasLine'
+                'Main-Class': 'com.flowapp.GasLine.Launcher'
         )
     }
 }

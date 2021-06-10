@@ -1,21 +1,12 @@
 package com.flowapp.GasLine;
 
 import com.flowapp.GasLine.Models.GasPipe;
+import com.flowapp.GasLine.Models.GasPipeResult;
 import com.flowapp.GasLine.Models.PanhandlePResult;
 import com.flowapp.GasLine.Models.Tuple2;
 import com.flowapp.GasLine.Utils.Constants;
 import com.flowapp.GasLine.Utils.FileUtils;
 import com.flowapp.GasLine.Utils.TableList;
-import javafx.geometry.Insets;
-import javafx.scene.Scene;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.Tooltip;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
-import javafx.util.Duration;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -29,45 +20,38 @@ public class GasLine {
 
     private StringBuilder steps;
 
-    public void gasLine() {
+    public GasPipeResult gasLine(
+            Float iDmm,
+            float loopIDmm,
+            float totalLengthKm,
+            float flowRateScfHr,
+            float increasedFlowRateScfHr,
+            float consumerFlowRateScfHr,
+            Float p2,
+            Float p1,
+            Float tAvg,
+            float maxPressure,
+            float roughness,
+            Float c1y,
+            Float c2y,
+            Float c3y,
+            Float c4y,
+            Float nitrogenY, Float h2sY) {
 
         clear();
 
-        final Float iDmm = 385.8f;
-        final float loopIDmm = iDmm;
-        final float totalLengthKm = 120;
-        final float flowRateScfHr = 7.5f * 1_000_000f;
-        final float increasedFlowRateScfHr = flowRateScfHr * 1.35f;
-        final float consumerFlowRateScfHr = flowRateScfHr * 0.5f;
-        Float p2 = 200f;
-        Float p1 = null;
-        final Float tMax = 80f;
-        final Float tMin = 60f;
-        Float tAvg = null;
-        final float maxPressure = 1000f;
-        final float roughness = 0.061f;
-
-        final Float c1y = 0.88f;
-        final Float c2y = 0.1f;
-        final Float c3y = null;
-        final Float c4y = null;
-        final Float nitrogenY = 0.02f;
-
         final float totalLengthMiles = totalLengthKm / Constants.KmInMile;
+        println("L = {} / {} = {} Miles", totalLengthKm, Constants.KmInMile, totalLengthMiles);
         final float flowRateScfDay = flowRateScfHr * Constants.HoursInDay;
+        println("Q = {} * {} = {} SCF/hr", flowRateScfHr, Constants.HoursInDay, flowRateScfDay);
         final float increasedFlowRateScfDay = increasedFlowRateScfHr * Constants.HoursInDay;
         final float consumerFlowRateScfDay = consumerFlowRateScfHr * Constants.HoursInDay;
 
-        if (tAvg == null) {
-            tAvg = (tMax + tMin) / 2 + Constants.RankinZeroF;
-            println("Tavg = ({} + {}) / 2 + {} = {}", tMax, tMin, Constants.RankinZeroF, tAvg);
-        } else {
-            final var oldTAvg = tAvg;
-            tAvg = tAvg + Constants.RankinZeroF;
-            println("Tavg = {} + {} = {}", oldTAvg, Constants.RankinZeroF, tAvg);
-        }
+        final var oldTAvg = tAvg;
+        tAvg = tAvg + Constants.RankinZeroF;
+        println("Tavg = {} + {} = {}", oldTAvg, Constants.RankinZeroF, tAvg);
 
-        final float ymSum = calculateCompsTable(c1y,c2y,c3y,c4y,nitrogenY);
+        final float ymSum = calculateCompsTable(c1y,c2y,c3y,c4y,nitrogenY, h2sY);
         println("ΣYiMi = {}", ymSum);
         final float spGr = ymSum / Constants.AirMolecularWeight;
         println("δg = ΣYiMi / {} = {}/{} = {}", Constants.AirMolecularWeight, ymSum, Constants.AirMolecularWeight, spGr);
@@ -151,7 +135,22 @@ public class GasLine {
         }
 
         println("Packed Line:-");
-        final float storedV = calculateStoredVolume(p1, p2, iDmm, spGr, consumerFlowRateScfDay, totalLengthMiles, tAvg);
+        float storedV = 0;
+        for (int i = linesToLoop.size()-1; i>=0; i--) {
+            if (beforeLines.size()>1) {
+                println("For Station: {}", i+1);
+            }
+            final var line = linesToLoop.get(i);
+            final float thisStoredV = calculateStoredVolume(line.getP1(), line.getP2(), iDmm, spGr, consumerFlowRateScfDay, line.getLengthMile(), tAvg);
+            if (i != linesToLoop.size()-1) {
+                storedV += thisStoredV * (beforeLines.size() - 1);
+            } else {
+                storedV += thisStoredV;
+            }
+        }
+        if (beforeLines.size()>1) {
+            println("Total Vstored = {} SCF", storedV);
+        }
         final float avgQ = (consumerFlowRateScfDay + flowRateScfDay) / 2;
         println("Qavg = {} Scf/Day", avgQ);
         final float strQ = Math.abs(flowRateScfDay - consumerFlowRateScfDay);
@@ -162,68 +161,7 @@ public class GasLine {
         println("Tstr = {}/{} = {} days", storedV, strQ, strTime);
         println("Then t (worst condition) = {} days", Math.min(strTime, avgTime));
 
-        drawLines(beforeLines, loops, afterLines);
-        System.out.println(steps);
-    }
-
-    private void drawLines(List<GasPipe> beforeLines, List<GasPipe> loops, List<GasPipe> afterLines) {
-        XYChart.Series<Number, Number> beforeSeries = new XYChart.Series();
-        beforeSeries.setName("Before");
-        for (var l: beforeLines) {
-            for (var p: l.generateHG()) {
-                beforeSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
-            }
-        }
-
-        final List<XYChart.Series<Number, Number>> loopsSeries = new ArrayList<>();
-        for (var l: loops) {
-            XYChart.Series<Number, Number> loopSeries = new XYChart.Series();
-            loopSeries.setName("Loop");
-            for (var p: l.generateHG()) {
-                loopSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
-            }
-            loopsSeries.add(loopSeries);
-        }
-
-        XYChart.Series<Number, Number> afterSeries = new XYChart.Series();
-        afterSeries.setName("after");
-        for (var l: afterLines) {
-            for (var p: l.generateHG()) {
-                afterSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
-            }
-        }
-
-        //Defining the x an y axes
-        NumberAxis xAxis = new NumberAxis();
-        NumberAxis yAxis = new NumberAxis();
-
-        //Setting labels for the axes
-        xAxis.setLabel("L(mile)");
-        yAxis.setLabel("P(psi)");
-
-        LineChart<Number, Number> hydraulicGradient = new LineChart<Number, Number>(xAxis, yAxis);
-        hydraulicGradient.getData().addAll(beforeSeries, afterSeries);
-        hydraulicGradient.getData().addAll(loopsSeries);
-
-        for (var item: hydraulicGradient.getData()) {
-            for (XYChart.Data<Number, Number> entry : item.getData()) {
-                Tooltip t = new Tooltip("(" + String.format("%.2f", Math.abs((float) entry.getXValue())) + " , " + entry.getYValue().toString() + ")");
-                t.setShowDelay(new Duration(50));
-                Tooltip.install(entry.getNode(), t);
-            }
-        }
-
-        //Creating a stack pane to hold the chart
-        StackPane pane = new StackPane(hydraulicGradient);
-        pane.setPadding(new Insets(15, 15, 15, 15));
-        pane.setStyle("-fx-background-color: BEIGE");
-        //Setting the Scene
-        Scene scene = new Scene(pane, 595, 350);
-        Stage chartsWindow = new Stage();
-        chartsWindow = new Stage();
-        chartsWindow.setTitle("HG");
-        chartsWindow.setScene(scene);
-        chartsWindow.show();
+        return new GasPipeResult(beforeLines, loops, afterLines, panhandlePResult, steps.toString());
     }
 
     private void renderLine(GasPipe line) {
@@ -450,8 +388,8 @@ public class GasLine {
             Float c2y,
             Float c3y,
             Float c4y,
-            Float nitrogenY
-    ) {
+            Float nitrogenY,
+            Float h2sY) {
         float sum = 0;
         final List<Object[]> lines = new ArrayList<>();
         lines.add(new Object[]{ "Comp.", "yi", "Mi", "yi.Mi" });
@@ -460,7 +398,8 @@ public class GasLine {
                 Tuple2.of("C2", Tuple2.of(c2y, Constants.C2MolecularWeight)),
                 Tuple2.of("C3", Tuple2.of(c3y, Constants.C3MolecularWeight)),
                 Tuple2.of("C4", Tuple2.of(c4y, Constants.C4MolecularWeight)),
-                Tuple2.of("N2", Tuple2.of(nitrogenY, Constants.NitrogenMolecularWeight))
+                Tuple2.of("N2", Tuple2.of(nitrogenY, Constants.NitrogenMolecularWeight)),
+                Tuple2.of("H2S", Tuple2.of(h2sY, Constants.H2SMolecularWeight))
         );
         for (var comp: comps) {
             if (comp.getSecond().getFirst() != null && comp.getSecond().getFirst() > 0) {

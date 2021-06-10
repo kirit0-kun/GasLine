@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="730.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.flowapp.GasLine.Controllers.MainWindowController">
+   <children>
+      <GridPane layoutX="15.0" layoutY="13.0" prefHeight="297.0" prefWidth="580.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="146.0" minWidth="10.0" prefWidth="122.0" />
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="155.0" minWidth="10.0" prefWidth="153.0" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="146.0" minWidth="10.0" prefWidth="31.0" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="167.0" minWidth="10.0" prefWidth="123.0" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="183.0" minWidth="10.0" prefWidth="150.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="91.0" minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+         <children>
+            <Label text="I.D (mm)">
+               <padding>
+                  <Insets right="5.0" />
+               </padding>
+            </Label>
+            <TextField fx:id="iDTextField" prefHeight="26.0" prefWidth="155.0" text="385.8" GridPane.columnIndex="1" />
+            <Label text="Loop I.D (mm)" GridPane.rowIndex="1">
+               <padding>
+                  <Insets right="5.0" />
+               </padding>
+            </Label>
+            <TextField fx:id="loopIDTextField" prefHeight="26.0" prefWidth="152.0" text="385.8" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <Label text="Total Length (Km)" GridPane.rowIndex="2">
+               <padding>
+                  <Insets right="5.0" />
+               </padding>
+            </Label>
+            <Label text="Flow Rate (SCF/Hr)" GridPane.rowIndex="3" />
+            <Label prefHeight="36.0" prefWidth="124.0" text="Flow Rate Increase %" wrapText="true" GridPane.rowIndex="4" />
+            <Label prefHeight="35.0" prefWidth="115.0" text="Consumer Flow Rate (SCF/Hr)" wrapText="true" GridPane.rowIndex="5" />
+            <Label text="P1 (PSI)" GridPane.rowIndex="6" />
+            <Label text="P2 (PSI)" GridPane.rowIndex="7" />
+            <Label text="Tavg (°F)" GridPane.columnIndex="3" />
+            <Label text="Max Pressure" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+            <Label text="Roughness (ξ)" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+            <Label text="C1y" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+            <Label text="C2y" GridPane.columnIndex="3" GridPane.rowIndex="4" />
+            <Label text="C3y" GridPane.columnIndex="3" GridPane.rowIndex="5" />
+            <Label text="Nitrogen y" GridPane.columnIndex="3" GridPane.rowIndex="7" />
+            <TextField fx:id="totalLengthTextField" text="120" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            <TextField fx:id="flowRateTextField" text="7500000" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+            <TextField fx:id="flowRateIncreaseTextField" text="35" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+            <TextField fx:id="consumerFlowRateTextField" text="2497500" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+            <TextField fx:id="p1TextField" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+            <TextField fx:id="p2TextField" text="200" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+            <TextField fx:id="tAvgTextField" text="70" GridPane.columnIndex="4" />
+            <TextField fx:id="maxPressureTextField" text="1000" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+            <TextField fx:id="roughnessTextField" text="0.061" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+            <TextField fx:id="c1YTextField" text="0.88" GridPane.columnIndex="4" GridPane.rowIndex="3" />
+            <TextField fx:id="c2YTextField" text="0.1" GridPane.columnIndex="4" GridPane.rowIndex="4" />
+            <TextField fx:id="c3YTextField" GridPane.columnIndex="4" GridPane.rowIndex="5" />
+            <TextField fx:id="nitrogenYTextField" text="0.02" GridPane.columnIndex="4" GridPane.rowIndex="7" />
+            <Separator opacity="0.0" orientation="VERTICAL" prefHeight="200.0" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowSpan="2147483647" />
+            <Label text="C4y" GridPane.columnIndex="3" GridPane.rowIndex="6" />
+            <TextField fx:id="c4YTextBox" GridPane.columnIndex="4" GridPane.rowIndex="6" />
+            <Label text="H2S y" GridPane.columnIndex="3" GridPane.rowIndex="8" />
+            <TextField fx:id="h2sYTextField1" GridPane.columnIndex="4" GridPane.rowIndex="8" />
+         </children>
+      </GridPane>
+      <TextArea fx:id="answerArea" editable="false" layoutX="29.0" layoutY="367.0" prefHeight="353.0" prefWidth="580.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="367.0">
+         <font>
+            <Font name="Fira Code Retina" size="13.0" />
+         </font></TextArea>
+      <Button fx:id="calculateBtn" layoutX="200.0" layoutY="322.0" mnemonicParsing="false" prefHeight="34.0" prefWidth="215.0" text="Calculate" AnchorPane.leftAnchor="200.0" AnchorPane.rightAnchor="200.0" AnchorPane.topAnchor="322.0" />
+   </children>
+</AnchorPane>
