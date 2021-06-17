@@ -38,12 +38,6 @@ public class Launcher extends Application {
 
     private Boolean isValid(Stage primaryStage) {
         Boolean isValid = false;
-        final var now = LocalDateTime.now();
-        final var startTrial = LocalDateTime.of(2021, Month.JUNE, 17, 0,0);
-        final var endTrial = LocalDateTime.of(2021, Month.JUNE, 18, 18,0);
-        if (startTrial.isBefore(now) && endTrial.isAfter(now)) {
-            return true;
-        }
         String license = readKey();
         if (validKey(license)) {
             isValid = true;
