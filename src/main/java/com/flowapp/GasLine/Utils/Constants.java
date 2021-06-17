@@ -17,7 +17,7 @@ public class Constants {
     public static final float C2MolecularWeight = 30.06f;
     public static final float C3MolecularWeight = 44.1f;
     public static final float C4MolecularWeight = 58.12f;
-    public static final float H2SMolecularWeight = 34.5f;
+    public static final float H2SMolecularWeight = 34.7f;
     public static final float NitrogenMolecularWeight = 28f;
     public static final float AirMolecularWeight = 29f;
     public static final float RankinZeroF = 460f;

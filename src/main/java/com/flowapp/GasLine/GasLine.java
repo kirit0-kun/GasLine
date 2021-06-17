@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -86,10 +87,12 @@ public class GasLine {
         println("Using loop with ID = {} mm", loopIDmm);
         final List<GasPipe> loops = new ArrayList<>();
         final List<GasPipe> linesToLoop = new ArrayList<>();
+        final List<GasPipe> complementaryLines = new ArrayList<>();
         if (beforeLines.size() > 1) {
             linesToLoop.add(beforeLines.get(0));
         }
         linesToLoop.add(beforeLines.get(beforeLines.size() - 1));
+        Collections.reverse(linesToLoop);
         for (int i = linesToLoop.size() - 1; i >= 0; i--) {
             final var lineToLoop = linesToLoop.get(i);
             if (linesToLoop.size() > 1) {
@@ -109,6 +112,10 @@ public class GasLine {
             println("Loop head (P1) = {} Psi", loopP1);
             final GasPipe loop = new GasPipe(loopP1, lineToLoop.getP2(), increasedFlowRateScfDay, loopIDmm, loopStart, loopLength);
             loops.add(loop);
+            if (linesToLoop.size() > 1 && (beforeLines.size()-i) > 1) {
+                final GasPipe complementaryLine = new GasPipe(lineToLoop.getP1(), loopP1, increasedFlowRateScfDay, lineToLoop.getIDmm(), lineToLoop.getStartMile(), lineToLoop.getLengthMile() - loopLength);
+                complementaryLines.add(complementaryLine);
+            }
         }
 
         println("Using booster stations:-");
@@ -161,7 +168,7 @@ public class GasLine {
         println("Tstr = {}/{} = {} days", storedV, strQ, strTime);
         println("Then t (worst condition) = {} days", Math.min(strTime, avgTime));
 
-        return new GasPipeResult(beforeLines, loops, afterLines, panhandlePResult, steps.toString());
+        return new GasPipeResult(beforeLines, loops, afterLines, complementaryLines, panhandlePResult, steps.toString());
     }
 
     private void renderLine(GasPipe line) {

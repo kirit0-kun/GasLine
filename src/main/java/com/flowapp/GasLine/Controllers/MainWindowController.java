@@ -3,6 +3,7 @@ package com.flowapp.GasLine.Controllers;
 import com.flowapp.GasLine.GasLine;
 import com.flowapp.GasLine.Models.GasPipe;
 import com.flowapp.GasLine.Models.GasPipeResult;
+import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -14,6 +15,10 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.DataFormat;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
@@ -23,10 +28,8 @@ import javafx.util.Duration;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.ParsePosition;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
+import java.util.regex.Pattern;
 
 public class MainWindowController implements Initializable {
 
@@ -88,7 +91,22 @@ public class MainWindowController implements Initializable {
     @FXML
     private Button calculateBtn;
 
+    @FXML
+    private ImageView facebookIcon;
+
+    @FXML
+    private ImageView linkedInIcon;
+
+    @FXML
+    private ImageView emailIcon;
+
     private Stage chartsWindow;
+
+    private final Application application;
+
+    public MainWindowController(Application application) {
+        this.application = application;
+    }
 
     Stage getStage() {
         return (Stage) answerArea.getScene().getWindow();
@@ -132,16 +150,51 @@ public class MainWindowController implements Initializable {
                 errorDialog.show();
             }
         });
+        setUpIcons();
     }
 
-    TextFormatter createDecimalFormatter() {
-        DecimalFormat format = new DecimalFormat( "#.0" );
+    private void setUpIcons() {
+        var packagePath = getClass().getPackageName().split("\\.");
+        packagePath[packagePath.length-1] = "Images";
+        String fontPath = Arrays.stream(packagePath).reduce("", (s, s2) -> s + "/" + s2);
+        final var facebookImage = getClass().getResource(fontPath + "/facebook.png");
+        final var linkedInImage = getClass().getResource(fontPath + "/linkedin.png");
+        final var emailImage = getClass().getResource(fontPath + "/email.png");
+        facebookIcon.setImage(new Image(Objects.requireNonNull(facebookImage).toString()));
+        linkedInIcon.setImage(new Image(Objects.requireNonNull(linkedInImage).toString()));
+        emailIcon.setImage(new Image(Objects.requireNonNull(emailImage).toString()));
+        facebookIcon.setPickOnBounds(true);
+        linkedInIcon.setPickOnBounds(true);
+        emailIcon.setPickOnBounds(true);
+        facebookIcon.setOnMouseClicked(e -> {
+            openBrowser("https://www.facebook.com/Moustafa.essam.hpp");
+        });
+        linkedInIcon.setOnMouseClicked(e -> {
+            openBrowser("https://www.linkedin.com/in/moustafa-essam-726262174");
+        });
+        emailIcon.setOnMouseClicked(e -> {
+            final var email = "mailto:essam.moustafa15@gmail.com";
+            openBrowser(email);
+            copyToClipboard(email);
+        });
+    }
+
+    void openBrowser(String url) {
+        application.getHostServices().showDocument(url);
+    }
+
+    private void copyToClipboard(String answer) {
+        Clipboard.getSystemClipboard().setContent(Map.of(DataFormat.PLAIN_TEXT, answer));
+    }
+
+    private final Pattern numbersExpr = Pattern.compile("[-]?[\\d]*[.]?[\\d]*");
+    TextFormatter<?> createDecimalFormatter() {
+        final var pattern = numbersExpr.pattern();
         return new TextFormatter<>(c -> {
-            if (c.getControlNewText().isEmpty() ) { return c; }
-            ParsePosition parsePosition = new ParsePosition(0);
-            Object object = format.parse(c.getControlNewText(), parsePosition);
-            if (object == null || parsePosition.getIndex() < c.getControlNewText().length()) { return null; }
-            else { return c; }
+            if (c.getControlNewText().isEmpty()) { return c; }
+            final var isGood = c.getControlNewText().matches(pattern);
+            if (isGood) { return c; }
+            else { return null; }
         });
     }
 
@@ -223,8 +276,14 @@ public class MainWindowController implements Initializable {
         };
         task.setOnSucceeded(e -> {
             final var result = task.getValue();
-            drawLines(result.getBeforeLines(), result.getLoops(), result.getAfterLines());
+            drawLines(result.getBeforeLines(), result.getLoops(), result.getAfterLines(), result.getComplementaryLines());
             setAnswer(result.getSteps());
+        });
+        task.setOnFailed(e -> {
+            final var error = e.getSource().getException();
+            final var errorDialog = createErrorDialog(getStage(), error);
+            errorDialog.show();
+            setAnswer(error.getMessage());
         });
         task.run();
     }
@@ -249,7 +308,7 @@ public class MainWindowController implements Initializable {
         answerArea.setText(answer);
     }
 
-    Alert createErrorDialog(Stage owner, Exception e) {
+    Alert createErrorDialog(Stage owner, Throwable e) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.initOwner(owner);
         alert.setTitle("Error");
@@ -279,7 +338,7 @@ public class MainWindowController implements Initializable {
         return alert;
     }
 
-    private void drawLines(List<GasPipe> beforeLines, List<GasPipe> loops, List<GasPipe> afterLines) {
+    private void drawLines(List<GasPipe> beforeLines, List<GasPipe> loops, List<GasPipe> afterLines, List<GasPipe> complementaryLines) {
         XYChart.Series<Number, Number> beforeSeries = new XYChart.Series();
         beforeSeries.setName("Before");
         for (var l: beforeLines) {
@@ -306,6 +365,16 @@ public class MainWindowController implements Initializable {
             }
         }
 
+        final List<XYChart.Series<Number, Number>> complementarySeries = new ArrayList<>();
+        for (var l: complementaryLines) {
+            XYChart.Series<Number, Number> loopSeries = new XYChart.Series();
+            loopSeries.setName("Complementary");
+            for (var p: l.generateHG()) {
+                loopSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
+            }
+            complementarySeries.add(loopSeries);
+        }
+
         //Defining the x an y axes
         NumberAxis xAxis = new NumberAxis();
         NumberAxis yAxis = new NumberAxis();
@@ -315,6 +384,7 @@ public class MainWindowController implements Initializable {
         yAxis.setLabel("P(psi)");
 
         LineChart<Number, Number> hydraulicGradient = new LineChart<Number, Number>(xAxis, yAxis);
+        hydraulicGradient.getData().addAll(complementarySeries);
         hydraulicGradient.getData().addAll(beforeSeries, afterSeries);
         hydraulicGradient.getData().addAll(loopsSeries);
 
@@ -336,6 +406,7 @@ public class MainWindowController implements Initializable {
             chartsWindow.close();
         }
         chartsWindow = new Stage();
+        chartsWindow.initOwner(getStage());
         chartsWindow.setTitle("HG");
         chartsWindow.setScene(scene);
         chartsWindow.show();

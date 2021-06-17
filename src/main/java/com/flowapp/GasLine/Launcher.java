@@ -1,6 +1,7 @@
 package com.flowapp.GasLine;
 
 import com.flowapp.DateTimeRCryptor.DateTimeRCryptor;
+import com.flowapp.GasLine.Controllers.MainWindowController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
@@ -38,8 +39,8 @@ public class Launcher extends Application {
     private Boolean isValid(Stage primaryStage) {
         Boolean isValid = false;
         final var now = LocalDateTime.now();
-        final var startTrial = LocalDateTime.of(2021, Month.JUNE, 11, 0,0);
-        final var endTrial = LocalDateTime.of(2021, Month.JUNE, 12, 18,0);
+        final var startTrial = LocalDateTime.of(2021, Month.JUNE, 17, 0,0);
+        final var endTrial = LocalDateTime.of(2021, Month.JUNE, 18, 18,0);
         if (startTrial.isBefore(now) && endTrial.isAfter(now)) {
             return true;
         }
@@ -118,8 +119,11 @@ public class Launcher extends Application {
         return result[0];
     }
 
-    private void showMainWindow(Stage primaryStage) throws java.io.IOException {
-        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("Views/MainWindow.fxml")));
+    private void showMainWindow(Stage primaryStage) throws IOException {
+        MainWindowController mainWindowController = new MainWindowController(this);
+        FXMLLoader fxmlLoader = new FXMLLoader(Objects.requireNonNull(getClass().getResource("Views/MainWindow.fxml")));
+        fxmlLoader.setController(mainWindowController);
+        Parent root = fxmlLoader.load();
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
     }

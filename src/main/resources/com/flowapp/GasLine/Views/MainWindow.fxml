@@ -6,20 +6,24 @@
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="730.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.flowapp.GasLine.Controllers.MainWindowController">
+<AnchorPane prefHeight="803.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <GridPane layoutX="15.0" layoutY="13.0" prefHeight="297.0" prefWidth="580.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
         <columnConstraints>
-          <ColumnConstraints hgrow="SOMETIMES" maxWidth="146.0" minWidth="10.0" prefWidth="122.0" />
-          <ColumnConstraints hgrow="SOMETIMES" maxWidth="155.0" minWidth="10.0" prefWidth="153.0" />
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="146.0" minWidth="10.0" prefWidth="31.0" />
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="167.0" minWidth="10.0" prefWidth="123.0" />
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="187.0" minWidth="10.0" prefWidth="167.0" />
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="155.0" minWidth="10.0" prefWidth="132.0" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="146.0" minWidth="10.0" prefWidth="21.0" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="167.0" minWidth="10.0" prefWidth="110.0" />
             <ColumnConstraints hgrow="SOMETIMES" maxWidth="183.0" minWidth="10.0" prefWidth="150.0" />
         </columnConstraints>
         <rowConstraints>
@@ -53,7 +57,7 @@
             </Label>
             <Label text="Flow Rate (SCF/Hr)" GridPane.rowIndex="3" />
             <Label prefHeight="36.0" prefWidth="124.0" text="Flow Rate Increase %" wrapText="true" GridPane.rowIndex="4" />
-            <Label prefHeight="35.0" prefWidth="115.0" text="Consumer Flow Rate (SCF/Hr)" wrapText="true" GridPane.rowIndex="5" />
+            <Label prefHeight="33.0" prefWidth="164.0" text="Consumer Flow Rate (SCF/Hr)" wrapText="true" GridPane.rowIndex="5" />
             <Label text="P1 (PSI)" GridPane.rowIndex="6" />
             <Label text="P2 (PSI)" GridPane.rowIndex="7" />
             <Label text="Tavg (°F)" GridPane.columnIndex="3" />
@@ -83,10 +87,34 @@
             <TextField fx:id="h2sYTextField1" GridPane.columnIndex="4" GridPane.rowIndex="8" />
          </children>
       </GridPane>
-      <TextArea fx:id="answerArea" editable="false" layoutX="29.0" layoutY="367.0" prefHeight="353.0" prefWidth="580.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="367.0">
+      <TextArea fx:id="answerArea" editable="false" layoutX="29.0" layoutY="367.0" prefHeight="366.0" prefWidth="580.0" AnchorPane.bottomAnchor="80.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="367.0">
          <font>
             <Font name="Fira Code Retina" size="13.0" />
          </font></TextArea>
       <Button fx:id="calculateBtn" layoutX="200.0" layoutY="322.0" mnemonicParsing="false" prefHeight="34.0" prefWidth="215.0" text="Calculate" AnchorPane.leftAnchor="200.0" AnchorPane.rightAnchor="200.0" AnchorPane.topAnchor="322.0" />
+      <VBox alignment="CENTER" layoutX="10.0" layoutY="420.0" prefHeight="26.0" prefWidth="258.0" AnchorPane.bottomAnchor="8.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="8.0">
+         <children>
+            <Label text="Made By: Eng. Moustafa Essam" />
+            <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
+               <children>
+                  <ImageView fx:id="facebookIcon" fitHeight="36.0" fitWidth="36.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../../../../../LicenceCreator/src/main/resources/com/flowapp/LicenceCreator/Images/facebook.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="linkedInIcon" fitHeight="42.0" fitWidth="42.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../../../../../LicenceCreator/src/main/resources/com/flowapp/LicenceCreator/Images/linkedin.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="emailIcon" fitHeight="36.0" fitWidth="36.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../../../../../LicenceCreator/src/main/resources/com/flowapp/LicenceCreator/Images/email.png" />
+                     </image>
+                  </ImageView>
+               </children>
+            </HBox>
+         </children>
+      </VBox>
    </children>
 </AnchorPane>
