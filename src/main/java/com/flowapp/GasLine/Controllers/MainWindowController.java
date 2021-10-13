@@ -5,6 +5,7 @@ import com.flowapp.GasLine.Models.GasPipe;
 import com.flowapp.GasLine.Models.GasPipeResult;
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
+import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -218,74 +219,56 @@ public class MainWindowController implements Initializable {
         final Float nitrogenY = getFloat(nitrogenYTextField.getText());
         final Float h2sY = getFloat(h2sYTextField1.getText());
 
-        final var task = new Task<GasPipeResult>() {
-            Alert loadingDialog;
-
+        final var task = new Service<GasPipeResult>() {
             @Override
-            protected GasPipeResult call() throws Exception {
-                final var gasLine = new GasLine();
-                return gasLine.gasLine(
-                        iDmm,
-                        loopIDmm,
-                        totalLength,
-                        flowRate,
-                        increasedFlowRate,
-                        consumerFlowRate,
-                        p2,
-                        p1,
-                        tAvg,
-                        maxPressure,
-                        roughness,
-                        c1y,
-                        c2y,
-                        c3y,
-                        c4y,
-                        nitrogenY,h2sY);
-            }
-
-            @Override
-            public void run() {
-                loadingDialog = createProgressAlert(getStage(), this);
-                super.run();
-                loadingDialog.show();
-            }
-
-            protected void closeDialog() {
-                if (loadingDialog != null) {
-                    loadingDialog.close();
-                }
-            }
-
-            @Override
-            protected void succeeded() {
-                super.succeeded();
-                closeDialog();
-            }
-
-            @Override
-            protected void failed() {
-                super.failed();
-                closeDialog();
-            }
-
-            @Override
-            protected void cancelled() {
-                super.cancelled();
-                closeDialog();
+            protected Task<GasPipeResult> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected GasPipeResult call() {
+                        final var gasLine = new GasLine();
+                        return gasLine.gasLine(
+                                iDmm,
+                                loopIDmm,
+                                totalLength,
+                                flowRate,
+                                increasedFlowRate,
+                                consumerFlowRate,
+                                p2,
+                                p1,
+                                tAvg,
+                                maxPressure,
+                                roughness,
+                                c1y,
+                                c2y,
+                                c3y,
+                                c4y,
+                                nitrogenY, h2sY);
+                    }
+                };
             }
         };
+        final var loadingDialog = createProgressAlert(getStage(), task);
+        task.setOnRunning(e -> {
+            loadingDialog.show();
+            System.out.println("STARTED");
+        });
         task.setOnSucceeded(e -> {
             final var result = task.getValue();
             drawLines(result.getBeforeLines(), result.getLoops(), result.getAfterLines(), result.getComplementaryLines());
             setAnswer(result.getSteps());
+            loadingDialog.close();
         });
         task.setOnFailed(e -> {
+            loadingDialog.close();
             final var error = e.getSource().getException();
             final var errorDialog = createErrorDialog(getStage(), error);
             errorDialog.show();
             setAnswer(error.getMessage());
         });
-        task.run();
+        task.setOnCancelled(e -> {
+            loadingDialog.close();
+        });
+        task.restart();
     }
 
     Float getFloat(String value) {
@@ -316,7 +299,7 @@ public class MainWindowController implements Initializable {
         return alert;
     }
 
-    Alert createProgressAlert(Stage owner, Task<?> task) {
+    Alert createProgressAlert(Stage owner, Service<?> task) {
         Alert alert = new Alert(Alert.AlertType.NONE);
         alert.initOwner(owner);
         alert.titleProperty().bind(task.titleProperty());
@@ -325,6 +308,7 @@ public class MainWindowController implements Initializable {
         ProgressIndicator pIndicator = new ProgressIndicator();
         pIndicator.progressProperty().bind(task.progressProperty());
         alert.setGraphic(pIndicator);
+        alert.setHeaderText("Loading...");
 
         alert.getDialogPane().getButtonTypes().add(ButtonType.OK);
         alert.getDialogPane().lookupButton(ButtonType.OK)
