@@ -16,6 +16,10 @@ application {
     mainModule = 'com.flowapp.GasLine'
 }
 
+java {
+    modularity.inferModulePath = true
+}
+
 repositories {
     mavenCentral()
 }
@@ -42,7 +46,7 @@ jlink {
         name = 'Gas Line'
     }
     jpackage {
-        appVersion = 1
+        appVersion = '1.0.0'
         installerOutputDir = file("$buildDir/installers")
     }
 }
@@ -51,7 +55,7 @@ jar {
     manifest {
         attributes(
                 'Class-Path': configurations.collect { it.getName() }.join(' '),
-                'Main-Class': 'com.flowapp.RefiningProject.Launcher'
+                'Main-Class': 'com.flowapp.GasLine.Launcher'
         )
     }
 }
