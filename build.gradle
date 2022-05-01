@@ -16,6 +16,10 @@ application {
     mainModule = 'com.flowapp.GasLine'
 }
 
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
 java {
     modularity.inferModulePath = true
 }
