@@ -1,4 +1,4 @@
-module com.flowaap.GasLine {
+module com.flowapp.GasLine {
     requires javafx.fxml;
     requires javafx.controls;
     requires javafx.graphics;
