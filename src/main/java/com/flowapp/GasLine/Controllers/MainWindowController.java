@@ -140,7 +140,10 @@ public class MainWindowController implements Initializable {
         var packagePath = getClass().getPackageName().split("\\.");
         packagePath[packagePath.length-1] = "Fonts";
         String fontPath = Arrays.stream(packagePath).reduce("", (s, s2) -> s + "/" + s2);
-        Font font = Font.loadFont(getClass().getResourceAsStream(fontPath + "/FiraCode-Retina.ttf"), answerArea.getFont().getSize());
+        Font font = Font.loadFont(
+                getClass().getResourceAsStream(fontPath + "/FiraCode-Retina.ttf"),
+                15
+        );
         answerArea.setFont(font);
         calculateBtn.setOnAction(e -> {
             try {

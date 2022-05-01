@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'org.openjfx.javafxplugin' version '0.0.10'
-    id 'org.beryx.jlink' version '2.24.0'
+    id 'org.openjfx.javafxplugin' version '0.0.12'
+    id 'org.beryx.jlink' version '2.24.4'
 }
 
 group 'com.flowapp'
@@ -33,8 +33,8 @@ test {
 }
 
 javafx {
-    version = '15'
-    //modules = ['javafx.controls', 'javafx.graphics', 'javafx.fxml', 'javafx.base']
+    version = '17'
+    modules = ['javafx.controls', 'javafx.graphics', 'javafx.fxml', 'javafx.base']
 }
 
 jlink {
@@ -50,8 +50,8 @@ jlink {
 jar {
     manifest {
         attributes(
-                'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
-                'Main-Class': 'com.flowapp.GasLine.Launcher'
+                'Class-Path': configurations.collect { it.getName() }.join(' '),
+                'Main-Class': 'com.flowapp.RefiningProject.Launcher'
         )
     }
 }
