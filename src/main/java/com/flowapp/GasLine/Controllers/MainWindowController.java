@@ -257,7 +257,7 @@ public class MainWindowController implements Initializable {
         });
         task.setOnSucceeded(e -> {
             final var result = task.getValue();
-            drawLines(result.getBeforeLines(), result.getLoops(), result.getAfterLines(), result.getComplementaryLines());
+            drawLines(result.getBeforeLines(), result.getLoops(), result.getRedesignedAfterLines(), result.getAfterLines(), result.getComplementaryLines());
             setAnswer(result.getSteps());
             loadingDialog.close();
         });
@@ -325,7 +325,9 @@ public class MainWindowController implements Initializable {
         return alert;
     }
 
-    private void drawLines(List<GasPipe> beforeLines, List<GasPipe> loops, List<GasPipe> afterLines, List<GasPipe> complementaryLines) {
+    private void drawLines(List<GasPipe> beforeLines, List<GasPipe> loops,
+                           List<GasPipe> redesignedAfterLines,
+                           List<GasPipe> afterLines, List<GasPipe> complementaryLines) {
         XYChart.Series<Number, Number> beforeSeries = new XYChart.Series();
         beforeSeries.setName("Before");
         for (var l: beforeLines) {
@@ -342,6 +344,14 @@ public class MainWindowController implements Initializable {
                 loopSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
             }
             loopsSeries.add(loopSeries);
+        }
+
+        XYChart.Series<Number, Number> redesignedAfterSeries = new XYChart.Series();
+        redesignedAfterSeries.setName("Redesigned after");
+        for (var l: redesignedAfterLines) {
+            for (var p: l.generateHG()) {
+                redesignedAfterSeries.getData().add(new XYChart.Data(p.getX(), p.getY()));
+            }
         }
 
         XYChart.Series<Number, Number> afterSeries = new XYChart.Series();
@@ -372,7 +382,7 @@ public class MainWindowController implements Initializable {
 
         LineChart<Number, Number> hydraulicGradient = new LineChart<Number, Number>(xAxis, yAxis);
         hydraulicGradient.getData().addAll(complementarySeries);
-        hydraulicGradient.getData().addAll(beforeSeries, afterSeries);
+        hydraulicGradient.getData().addAll(beforeSeries, redesignedAfterSeries, afterSeries);
         hydraulicGradient.getData().addAll(loopsSeries);
 
         for (var item: hydraulicGradient.getData()) {

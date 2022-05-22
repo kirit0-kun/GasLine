@@ -9,10 +9,7 @@ import com.flowapp.GasLine.Utils.FileUtils;
 import com.flowapp.GasLine.Utils.TableList;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -75,7 +72,7 @@ public class GasLine {
             println("since P1 > Max Pressure");
             println("then more than one station is required");
             p1 = maxPressure;
-            beforeLines.addAll(calculateBoosterStations(iDmm, p2, tAvg, maxPressure, totalLengthMiles, flowRateScfDay, spGr, panhandlePResult.getZ()));
+            beforeLines.addAll(calculateBoosterStations(iDmm, p2, tAvg, maxPressure, totalLengthMiles, flowRateScfDay, spGr, panhandlePResult.getZ(), 0));
         } else {
             println("since P1 < Max Pressure");
             println("then one station is sufficient");
@@ -118,8 +115,33 @@ public class GasLine {
             }
         }
 
+        println("Redesigning using booster stations:-");
+        final List<GasPipe> redesignedAfterLines = new ArrayList<>(calculateBoosterStations(iDmm, p2, tAvg, p1,
+                totalLengthMiles, increasedFlowRateScfDay, spGr,
+                Objects.requireNonNull(panhandlePResult).getZ(), 0));
+
         println("Using booster stations:-");
-        final List<GasPipe> afterLines = new ArrayList<>(calculateBoosterStations(iDmm, p2, tAvg, p1, totalLengthMiles, increasedFlowRateScfDay, spGr, panhandlePResult.getZ()));
+        final GasPipe firstLine = beforeLines.get(0);
+        println("For first station:-");
+        final List<GasPipe> firstAfterLinesSeries = new ArrayList<>(calculateBoosterStations(iDmm, p2, tAvg, p1,
+                firstLine.getLengthMile(), increasedFlowRateScfDay, spGr,
+                Objects.requireNonNull(panhandlePResult).getZ(), 0));
+        final List<GasPipe> afterLines = new ArrayList<>(firstAfterLinesSeries);
+        for (int i = 1; i < beforeLines.size() - 1; i++) {
+            final GasPipe beforeLine = beforeLines.get(i);
+            final List<GasPipe> after = afterLines.stream().map(line -> new GasPipe(line.getP1(),
+                    line.getP2(), line.getFlowRateScfDay(), line.getIDmm(),
+                    line.getStartMile() + beforeLine.getStartMile(),
+                    line.getLengthMile())).toList();
+            afterLines.addAll(after);
+        }
+        if (beforeLines.size() > 1) {
+            final GasPipe lastLine = beforeLines.get(beforeLines.size() - 1);
+            println("For last station:-");
+            afterLines.addAll(calculateBoosterStations(iDmm, p2, tAvg, p1,
+                    lastLine.getLengthMile(), increasedFlowRateScfDay, spGr,
+                    Objects.requireNonNull(panhandlePResult).getZ(), lastLine.getStartMile()));
+        }
 
         println("Drawing");
         println("Before Increase");
@@ -132,6 +154,12 @@ public class GasLine {
         for (int i = 0; i < loops.size(); i++) {
             final var line = loops.get(i);
             println("Loop {}", i+1);
+            renderLine(line);
+        }
+        println("After increase redesigned");
+        for (int i = 0; i < redesignedAfterLines.size(); i++) {
+            final var line = redesignedAfterLines.get(i);
+            println("Station {}", i+1);
             renderLine(line);
         }
         println("After increase");
@@ -168,7 +196,7 @@ public class GasLine {
         println("Tstr = {}/{} = {} days", storedV, strQ, strTime);
         println("Then t (worst condition) = {} days", Math.min(strTime, avgTime));
 
-        return new GasPipeResult(beforeLines, loops, afterLines, complementaryLines, panhandlePResult, steps.toString());
+        return new GasPipeResult(beforeLines, loops, redesignedAfterLines, afterLines, complementaryLines, panhandlePResult, steps.toString());
     }
 
     private void renderLine(GasPipe line) {
@@ -204,14 +232,14 @@ public class GasLine {
         renderTable(steps);
     }
 
-    private List<GasPipe> calculateBoosterStations(Float iDmm, Float p2, Float tAvg, float p1, float totalLengthMiles, float flowRateScfDay, float spGr, float z) {
+    private List<GasPipe> calculateBoosterStations(Float iDmm, Float p2, Float tAvg, float p1, float totalLengthMiles, float flowRateScfDay, float spGr, float z, float offset) {
         final List<GasPipe> beforeLines = new ArrayList<>();
         final float stationLength = calculateStationLengthMile(p1, p2, flowRateScfDay, iDmm, spGr, tAvg, z);
         final int numberOfStations = (int) Math.ceil(totalLengthMiles /stationLength);
         println("calculate length for (P1 = {} Psi) = {} Miles, therefore requires {} stations", p1, stationLength, numberOfStations);
         float remainingLength = totalLengthMiles;
         for (int i = 1; i <= numberOfStations; i++) {
-            final float start = stationLength * (i-1);
+            final float start = offset + stationLength * (i-1);
             final float length = Math.min(stationLength, remainingLength);
             float stationP1;
             if (length == stationLength) {

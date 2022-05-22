@@ -6,15 +6,19 @@ public class GasPipeResult {
 
     private final List<GasPipe> beforeLines;
     private final List<GasPipe> loops;
+
+    private final List<GasPipe> redesignedAfterLines;
     private final List<GasPipe> afterLines;
     private final List<GasPipe> complementaryLines;
     private final PanhandlePResult panhandlePResult;
     private final String steps;
 
 
-    public GasPipeResult(List<GasPipe> beforeLines, List<GasPipe> loops, List<GasPipe> afterLines,List<GasPipe> complementaryLines, PanhandlePResult panhandlePResult, String steps) {
+    public GasPipeResult(List<GasPipe> beforeLines, List<GasPipe> loops, List<GasPipe> redesignedAfterLines,
+                         List<GasPipe> afterLines,List<GasPipe> complementaryLines, PanhandlePResult panhandlePResult, String steps) {
         this.beforeLines = beforeLines;
         this.loops = loops;
+        this.redesignedAfterLines = redesignedAfterLines;
         this.afterLines = afterLines;
         this.complementaryLines = complementaryLines;
         this.panhandlePResult = panhandlePResult;
@@ -31,6 +35,10 @@ public class GasPipeResult {
 
     public List<GasPipe> getAfterLines() {
         return afterLines;
+    }
+
+    public List<GasPipe> getRedesignedAfterLines() {
+        return redesignedAfterLines;
     }
 
     public List<GasPipe> getComplementaryLines() {
