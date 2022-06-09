@@ -133,9 +133,11 @@ public class GasLine {
             final var loopx = 1 - loopy;
             final float loopLength = lineToLoop.getLengthMile() * loopy;
             final float loopStart = lineToLoop.getStartMile() + lineToLoop.getLengthMile() * loopx;
-//            final float loopP1 = calculateP2(lineToLoop.getP1(), spGr, lineToLoop.getIDmm(), increasedFlowRateScfDay, lineToLoop.getLengthMile() - loopLength, tAvg, false).getP2();
             final var lenDiff = lineToLoop.getLengthMile() - loopLength;
-            final float loopP1 = afterLine.calculatePxFromLineStart(lenDiff);
+            var loopP1 = afterLine.calculatePxFromLineStart(lenDiff);
+            if (loopP1 > lineToLoop.getP1()) {
+                loopP1 = calculateP2(lineToLoop.getP1(), spGr, lineToLoop.getIDmm(), increasedFlowRateScfDay, lineToLoop.getLengthMile() - loopLength, tAvg, false).getP2();
+            }
             println("Then loop length (yl) = {} Miles", loopLength);
             println("loop position = {} Miles from the first point", loopStart);
             println("Loop head (P1) = {} Psi", loopP1);
