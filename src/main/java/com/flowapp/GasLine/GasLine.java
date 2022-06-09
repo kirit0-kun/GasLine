@@ -94,60 +94,79 @@ public class GasLine {
                 firstLine.getLengthMile(), increasedFlowRateScfDay, spGr,
                 Objects.requireNonNull(panhandlePResult).getZ(), 0));
         final List<GasPipe> afterLines = new ArrayList<>(firstAfterLinesSeries);
-        final var afterLine = firstAfterLinesSeries.get(0);
+        final List<GasPipe> linesToLoop = new ArrayList<>();
+        if (firstAfterLinesSeries.size() > 1) {
+            linesToLoop.add(beforeLines.get(0));
+        }
         for (int i = 1; i < beforeLines.size() - 1; i++) {
             final GasPipe beforeLine = beforeLines.get(i);
             final List<GasPipe> after = afterLines.stream().map(line -> new GasPipe(line.getP1(),
                     line.getP2(), line.getFlowRateScfDay(), line.getIDmm(),
                     line.getStartMile() + beforeLine.getStartMile(),
                     line.getLengthMile())).toList();
+            if (after.size() > 1) {
+                linesToLoop.add(beforeLine);
+            }
             afterLines.addAll(after);
         }
         if (beforeLines.size() > 1) {
             final GasPipe lastLine = beforeLines.get(beforeLines.size() - 1);
             println("For last station:-");
-            afterLines.addAll(calculateBoosterStations(iDmm, p2, tAvg, p1,
+            final var after = calculateBoosterStations(iDmm, p2, tAvg, p1,
                     lastLine.getLengthMile(), increasedFlowRateScfDay, spGr,
-                    Objects.requireNonNull(panhandlePResult).getZ(), lastLine.getStartMile()));
+                    Objects.requireNonNull(panhandlePResult).getZ(), lastLine.getStartMile());
+            afterLines.addAll(after);
+            if (after.size() > 1) {
+                linesToLoop.add(lastLine);
+            }
         }
 
         println("Using loop with ID = {} mm", loopIDmm);
         final List<GasPipe> loops = new ArrayList<>();
-        final List<GasPipe> linesToLoop = new ArrayList<>();
         final List<GasPipe> complementaryLines = new ArrayList<>();
-        if (beforeLines.size() > 1) {
-            linesToLoop.add(beforeLines.get(0));
-        }
-        linesToLoop.add(beforeLines.get(beforeLines.size() - 1));
-        Collections.reverse(linesToLoop);
-        for (int i = linesToLoop.size() - 1; i >= 0; i--) {
-            final var lineToLoop = linesToLoop.get(i);
-            if (linesToLoop.size() > 1) {
-                println("For station #{}", beforeLines.size()-i);
-            }
-            final var loopy = calculateLoopFraction(roughness, iDmm, loopIDmm, flowRateScfDay, increasedFlowRateScfDay);
-            if (loopy > 1) {
-                println("Since y > 1, then an increased flow rate using a loop is not feasible");
-                break;
-            }
+        final var lineToLoopFirstSection = afterLines.get(0);
+
+        final var loopy = calculateLoopFraction(roughness, iDmm, loopIDmm, flowRateScfDay, increasedFlowRateScfDay);
+        if (loopy > 1) {
+            println("Since y > 1, then an increased flow rate using a loop is not feasible");
+        } else {
             final var loopx = 1 - loopy;
-            final float loopLength = lineToLoop.getLengthMile() * loopy;
-            final float loopStart = lineToLoop.getStartMile() + lineToLoop.getLengthMile() * loopx;
-            final var lenDiff = lineToLoop.getLengthMile() - loopLength;
-            var loopP1 = afterLine.calculatePxFromLineStart(lenDiff);
-            if (loopP1 > lineToLoop.getP1()) {
-                loopP1 = calculateP2(lineToLoop.getP1(), spGr, lineToLoop.getIDmm(), increasedFlowRateScfDay, lineToLoop.getLengthMile() - loopLength, tAvg, false).getP2();
-            }
-            println("Then loop length (yl) = {} Miles", loopLength);
-            println("loop position = {} Miles from the first point", loopStart);
-            println("Loop head (P1) = {} Psi", loopP1);
-            final GasPipe loop = new GasPipe(loopP1, lineToLoop.getP2(), increasedFlowRateScfDay, loopIDmm, loopStart, loopLength);
-            loops.add(loop);
-            if (linesToLoop.size() > 1 && (beforeLines.size()-i) > 1) {
-                final GasPipe complementaryLine = new GasPipe(lineToLoop.getP1(), loopP1, increasedFlowRateScfDay, lineToLoop.getIDmm(), lineToLoop.getStartMile(), lineToLoop.getLengthMile() - loopLength);
-                complementaryLines.add(complementaryLine);
+
+            for (int i = 0; i < linesToLoop.size(); i++) {
+                final var lineToLoop = linesToLoop.get(i);
+                if (linesToLoop.size() > 1) {
+                    println("For station #{}", beforeLines.indexOf(lineToLoop)+1);
+                }
+
+                float loopLength = lineToLoop.getLengthMile() * loopy;
+                float loopStart = lineToLoop.getStartMile() + lineToLoop.getLengthMile() * loopx;
+                final float loopP1;
+                if (lineToLoop.getP1() == lineToLoopFirstSection.getP1() || loops.isEmpty()) {
+                    final var lenDiff = lineToLoop.getLengthMile() * loopx;
+                    loopP1 = lineToLoopFirstSection.calculatePxFromLineStart(lenDiff);
+                } else {
+                    final var prevLoop = loops.get(0);
+                    final var prevLine = linesToLoop.get(0);
+                    final var endDiff = prevLine.getLengthMile() - lineToLoop.getLengthMile();
+                    loopP1 = prevLoop.calculatePxFromLineStart(endDiff);
+                    final var startDiffRatio = lineToLoopFirstSection.calculateX(loopP1);
+                    final var startDiff = lineToLoopFirstSection.getLengthMile() * startDiffRatio;
+                    loopLength = lineToLoop.getLengthMile() - startDiff;
+                    loopStart = lineToLoop.getStartMile() + startDiff;
+                    System.out.printf("%f %f %f %f\n", loopP1, loopLength, loopStart, endDiff);
+                }
+                println("loop length (yl) = {} Miles", loopLength);
+                println("loop position = {} Miles from the first point", loopStart);
+                println("Loop head (P1) = {} Psi", loopP1);
+                final GasPipe loop = new GasPipe(loopP1, lineToLoop.getP2(), increasedFlowRateScfDay, loopIDmm, loopStart, loopLength);
+                loops.add(loop);
+//                if (linesToLoop.size() > 1 && (beforeLines.size()-i) > 1) {
+//                    final GasPipe complementaryLine = new GasPipe(lineToLoopFirstSection.getP1(), loopP1, increasedFlowRateScfDay, lineToLoop.getIDmm(), lineToLoop.getStartMile(), lineToLoop.getLengthMile() - loopLength);
+//                    complementaryLines.add(complementaryLine);
+//                }
             }
         }
+
 
         println("Drawing");
         println("Before Increase");
