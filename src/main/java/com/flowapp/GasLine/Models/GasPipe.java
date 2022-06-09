@@ -60,7 +60,11 @@ public class GasPipe {
 
     public float calculatePxFromStart(float l) {
         final float actualL = Math.max(0, l - startMile);
-        final float x = actualL / lengthMile;
+        return calculatePxFromLineStart(actualL);
+    }
+
+    public float calculatePxFromLineStart(float l) {
+        final float x = l / lengthMile;
         return calculatePx(x);
     }
 

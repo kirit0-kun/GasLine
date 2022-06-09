@@ -81,6 +81,36 @@ public class GasLine {
         }
 
         println("If Q is increased to {} SCf/Day", increasedFlowRateScfDay);
+
+        println("Redesigning using booster stations:-");
+        final List<GasPipe> redesignedAfterLines = new ArrayList<>(calculateBoosterStations(iDmm, p2, tAvg, p1,
+                totalLengthMiles, increasedFlowRateScfDay, spGr,
+                Objects.requireNonNull(panhandlePResult).getZ(), 0));
+
+        println("Using booster stations:-");
+        final GasPipe firstLine = beforeLines.get(0);
+        println("For first station:-");
+        final List<GasPipe> firstAfterLinesSeries = new ArrayList<>(calculateBoosterStations(iDmm, p2, tAvg, p1,
+                firstLine.getLengthMile(), increasedFlowRateScfDay, spGr,
+                Objects.requireNonNull(panhandlePResult).getZ(), 0));
+        final List<GasPipe> afterLines = new ArrayList<>(firstAfterLinesSeries);
+        final var afterLine = firstAfterLinesSeries.get(0);
+        for (int i = 1; i < beforeLines.size() - 1; i++) {
+            final GasPipe beforeLine = beforeLines.get(i);
+            final List<GasPipe> after = afterLines.stream().map(line -> new GasPipe(line.getP1(),
+                    line.getP2(), line.getFlowRateScfDay(), line.getIDmm(),
+                    line.getStartMile() + beforeLine.getStartMile(),
+                    line.getLengthMile())).toList();
+            afterLines.addAll(after);
+        }
+        if (beforeLines.size() > 1) {
+            final GasPipe lastLine = beforeLines.get(beforeLines.size() - 1);
+            println("For last station:-");
+            afterLines.addAll(calculateBoosterStations(iDmm, p2, tAvg, p1,
+                    lastLine.getLengthMile(), increasedFlowRateScfDay, spGr,
+                    Objects.requireNonNull(panhandlePResult).getZ(), lastLine.getStartMile()));
+        }
+
         println("Using loop with ID = {} mm", loopIDmm);
         final List<GasPipe> loops = new ArrayList<>();
         final List<GasPipe> linesToLoop = new ArrayList<>();
@@ -103,7 +133,9 @@ public class GasLine {
             final var loopx = 1 - loopy;
             final float loopLength = lineToLoop.getLengthMile() * loopy;
             final float loopStart = lineToLoop.getStartMile() + lineToLoop.getLengthMile() * loopx;
-            final float loopP1 = calculateP2(lineToLoop.getP1(), spGr, lineToLoop.getIDmm(), increasedFlowRateScfDay, lineToLoop.getLengthMile() - loopLength, tAvg, false).getP2();
+//            final float loopP1 = calculateP2(lineToLoop.getP1(), spGr, lineToLoop.getIDmm(), increasedFlowRateScfDay, lineToLoop.getLengthMile() - loopLength, tAvg, false).getP2();
+            final var lenDiff = lineToLoop.getLengthMile() - loopLength;
+            final float loopP1 = afterLine.calculatePxFromLineStart(lenDiff);
             println("Then loop length (yl) = {} Miles", loopLength);
             println("loop position = {} Miles from the first point", loopStart);
             println("Loop head (P1) = {} Psi", loopP1);
@@ -113,34 +145,6 @@ public class GasLine {
                 final GasPipe complementaryLine = new GasPipe(lineToLoop.getP1(), loopP1, increasedFlowRateScfDay, lineToLoop.getIDmm(), lineToLoop.getStartMile(), lineToLoop.getLengthMile() - loopLength);
                 complementaryLines.add(complementaryLine);
             }
-        }
-
-        println("Redesigning using booster stations:-");
-        final List<GasPipe> redesignedAfterLines = new ArrayList<>(calculateBoosterStations(iDmm, p2, tAvg, p1,
-                totalLengthMiles, increasedFlowRateScfDay, spGr,
-                Objects.requireNonNull(panhandlePResult).getZ(), 0));
-
-        println("Using booster stations:-");
-        final GasPipe firstLine = beforeLines.get(0);
-        println("For first station:-");
-        final List<GasPipe> firstAfterLinesSeries = new ArrayList<>(calculateBoosterStations(iDmm, p2, tAvg, p1,
-                firstLine.getLengthMile(), increasedFlowRateScfDay, spGr,
-                Objects.requireNonNull(panhandlePResult).getZ(), 0));
-        final List<GasPipe> afterLines = new ArrayList<>(firstAfterLinesSeries);
-        for (int i = 1; i < beforeLines.size() - 1; i++) {
-            final GasPipe beforeLine = beforeLines.get(i);
-            final List<GasPipe> after = afterLines.stream().map(line -> new GasPipe(line.getP1(),
-                    line.getP2(), line.getFlowRateScfDay(), line.getIDmm(),
-                    line.getStartMile() + beforeLine.getStartMile(),
-                    line.getLengthMile())).toList();
-            afterLines.addAll(after);
-        }
-        if (beforeLines.size() > 1) {
-            final GasPipe lastLine = beforeLines.get(beforeLines.size() - 1);
-            println("For last station:-");
-            afterLines.addAll(calculateBoosterStations(iDmm, p2, tAvg, p1,
-                    lastLine.getLengthMile(), increasedFlowRateScfDay, spGr,
-                    Objects.requireNonNull(panhandlePResult).getZ(), lastLine.getStartMile()));
         }
 
         println("Drawing");
@@ -246,8 +250,14 @@ public class GasLine {
                 stationP1 = p1;
             } else {
                 println("Calculating P1 for length = {} Miles", length);
-                stationP1 = calculateP1(p2, spGr, iDmm, flowRateScfDay, length, tAvg, p1, true).getP1();
-                println("Then P1 = {} Psi for length {} Miles", stationP1, length);
+                if (!beforeLines.isEmpty()) {
+                    final var firstLine = beforeLines.get(0);
+                    final var lengthDiff = firstLine.getLengthMile() - length;
+                    stationP1 = firstLine.calculatePxFromLineStart(lengthDiff);
+                } else {
+                    stationP1 = calculateP1(p2, spGr, iDmm, flowRateScfDay, length, tAvg, p1, true).getP1();
+                }
+                println("P1 = {} Psi for length {} Miles", stationP1, length);
             }
             final GasPipe line = new GasPipe(stationP1, p2, flowRateScfDay, iDmm, start, length);
             beforeLines.add(line);
@@ -469,7 +479,7 @@ public class GasLine {
                 }
             }
             return newRow;
-        }).collect(Collectors.toList());
+        }).toList();
         for (var row: newRows) {
             at.addRow(row);
         }

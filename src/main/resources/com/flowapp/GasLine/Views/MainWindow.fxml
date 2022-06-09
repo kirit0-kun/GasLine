@@ -16,7 +16,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="803.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane prefHeight="803.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <GridPane layoutX="15.0" layoutY="13.0" prefHeight="297.0" prefWidth="580.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
         <columnConstraints>
@@ -43,13 +43,13 @@
                   <Insets right="5.0" />
                </padding>
             </Label>
-            <TextField fx:id="iDTextField" prefHeight="26.0" prefWidth="155.0" text="385.8" GridPane.columnIndex="1" />
+            <TextField fx:id="iDTextField" prefHeight="26.0" prefWidth="155.0" text="331.8" GridPane.columnIndex="1" />
             <Label text="Loop I.D (mm)" GridPane.rowIndex="1">
                <padding>
                   <Insets right="5.0" />
                </padding>
             </Label>
-            <TextField fx:id="loopIDTextField" prefHeight="26.0" prefWidth="152.0" text="385.8" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <TextField fx:id="loopIDTextField" prefHeight="26.0" prefWidth="152.0" text="377.9" GridPane.columnIndex="1" GridPane.rowIndex="1" />
             <Label text="Total Length (Km)" GridPane.rowIndex="2">
                <padding>
                   <Insets right="5.0" />
@@ -68,18 +68,18 @@
             <Label text="C3y" GridPane.columnIndex="3" GridPane.rowIndex="5" />
             <Label text="Nitrogen y" GridPane.columnIndex="3" GridPane.rowIndex="7" />
             <TextField fx:id="totalLengthTextField" text="120" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-            <TextField fx:id="flowRateTextField" text="7500000" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-            <TextField fx:id="flowRateIncreaseTextField" text="35" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-            <TextField fx:id="consumerFlowRateTextField" text="2497500" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+            <TextField fx:id="flowRateTextField" text="9000000" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+            <TextField fx:id="flowRateIncreaseTextField" text="30" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+            <TextField fx:id="consumerFlowRateTextField" text="2970000" GridPane.columnIndex="1" GridPane.rowIndex="5" />
             <TextField fx:id="p1TextField" GridPane.columnIndex="1" GridPane.rowIndex="6" />
             <TextField fx:id="p2TextField" text="200" GridPane.columnIndex="1" GridPane.rowIndex="7" />
-            <TextField fx:id="tAvgTextField" text="70" GridPane.columnIndex="4" />
+            <TextField fx:id="tAvgTextField" text="75" GridPane.columnIndex="4" />
             <TextField fx:id="maxPressureTextField" text="1000" GridPane.columnIndex="4" GridPane.rowIndex="1" />
             <TextField fx:id="roughnessTextField" text="0.061" GridPane.columnIndex="4" GridPane.rowIndex="2" />
-            <TextField fx:id="c1YTextField" text="0.88" GridPane.columnIndex="4" GridPane.rowIndex="3" />
-            <TextField fx:id="c2YTextField" text="0.1" GridPane.columnIndex="4" GridPane.rowIndex="4" />
-            <TextField fx:id="c3YTextField" GridPane.columnIndex="4" GridPane.rowIndex="5" />
-            <TextField fx:id="nitrogenYTextField" text="0.02" GridPane.columnIndex="4" GridPane.rowIndex="7" />
+            <TextField fx:id="c1YTextField" text="0.74" GridPane.columnIndex="4" GridPane.rowIndex="3" />
+            <TextField fx:id="c2YTextField" text="0.2" GridPane.columnIndex="4" GridPane.rowIndex="4" />
+            <TextField fx:id="c3YTextField" text="0.06" GridPane.columnIndex="4" GridPane.rowIndex="5" />
+            <TextField fx:id="nitrogenYTextField" GridPane.columnIndex="4" GridPane.rowIndex="7" />
             <Separator opacity="0.0" orientation="VERTICAL" prefHeight="200.0" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowSpan="2147483647" />
             <Label text="C4y" GridPane.columnIndex="3" GridPane.rowIndex="6" />
             <TextField fx:id="c4YTextBox" GridPane.columnIndex="4" GridPane.rowIndex="6" />
